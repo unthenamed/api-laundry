@@ -9,7 +9,7 @@ import (
 // Interface TransactionRepo mendefinisikan metode untuk operasi transaksi
 type TransactionRepo interface {
 	InsertTransaction(model.Transaction) (model.Transaction, error)
-	GetAllTransaction(model.Transaction) ([]model.Transaction, error)
+	GetAllTransaction(model.Transaction) ([]model.Response, error)
 	GetTransactionById(id int) (model.Transaction, error)
 }
 
@@ -89,8 +89,8 @@ func (t *Transaction) InsertTransaction(mTransaction model.Transaction) (model.T
 }
 
 // Metode GetAllTransaction untuk mendapatkan semua data transaksi dari database
-func (t *Transaction) GetAllTransaction(mTransaction model.Transaction) ([]model.Transaction, error) {
-	var nTransaction []model.Transaction
+func (t *Transaction) GetAllTransaction(mTransaction model.Transaction) ([]model.Response, error) {
+	var nTransaction []model.Response
 
 	var args []interface{}
 	statment := `
@@ -125,64 +125,71 @@ func (t *Transaction) GetAllTransaction(mTransaction model.Transaction) ([]model
 		if counter != 1 {
 			query += " AND"
 		}
-		query += fmt.Sprintf(" p.name LIKE $%d", counter)
+		query += fmt.Sprintf(" p.name ILIKE $%d", counter)
 		args = append(args, "%"+mTransaction.Query.ProductName+"%")
 		counter++
 	}
 	if counter != 1 {
 		statment += `
-			join details d on b.id = d.bill_id
-			join products p on d.product_id = p.id
+			JOIN details d on b.id = d.bill_id
+			JOIN products p on d.product_id = p.id
 		`
 		statment += "WHERE" + query + " ORDER BY b.id ASC ;"
+	} else {
+		statment += " ORDER BY b.id ASC ;"
+
 	}
 
 	// Mengambil data dari database
 	rows, err := t.db.Query(statment, args...)
+	fmt.Printf("Mengambil Data Transaksi\n Query ----\n%s\n Argument ---- %v\n\n", statment, args)
 	if err != nil {
-		return []model.Transaction{}, err
+		return []model.Response{}, err
 	}
 	defer rows.Close()
 
 	// Mengambil data dari setiap baris hasil query
 	for rows.Next() {
-		dump := model.Transaction{}
+		dump := model.Response{}
 		err := rows.Scan(
-			&dump.Response.Id,
-			&dump.Response.BillDate,
-			&dump.Response.EntryDate,
-			&dump.Response.FinishDate,
-			&dump.Response.Employee.Id,
-			&dump.Response.Employee.Name,
-			&dump.Response.Employee.Address,
-			&dump.Response.Employee.PhoneNumber,
-			&dump.Response.Customer.Id,
-			&dump.Response.Customer.Name,
-			&dump.Response.Customer.Address,
-			&dump.Response.Customer.PhoneNumber,
+			&dump.Id,
+			&dump.BillDate,
+			&dump.EntryDate,
+			&dump.FinishDate,
+			&dump.Employee.Id,
+			&dump.Employee.Name,
+			&dump.Employee.Address,
+			&dump.Employee.PhoneNumber,
+			&dump.Customer.Id,
+			&dump.Customer.Name,
+			&dump.Customer.Address,
+			&dump.Customer.PhoneNumber,
 		)
 
 		if err != nil {
-			return []model.Transaction{}, err
+			return []model.Response{}, err
 		}
 
 		// Mengambil data detail transaksi
 		statment = `
-		SELECT d.id, d.bill_id, d.product_id, d.product_price, d.qty
+		SELECT	d.id, d.bill_id, d.product_id, d.product_price, d.qty,
+				p.id, p.name, p.price, p.unit
 		FROM details d
-		join bills b on d.bill_id = b.id
-		join products p on d.product_id = p.id
+		JOIN bills b ON d.bill_id = b.id
+		JOIN products p ON d.product_id = p.id
 		`
-		args = append(args, dump.Response.Id)
+		argsDetail := append(args, dump.Id)
 		if query != "" {
 			statment += ` WHERE ` + query + fmt.Sprintf(" AND d.bill_id = $%d", counter) + ";"
+			//args = append(args, dump.Response.Id)
 		} else {
 			statment += `WHERE d.bill_id = $1;`
 		}
 
-		rowsDetail, err := t.db.Query(statment, args...)
+		rowsDetail, err := t.db.Query(statment, argsDetail...)
+		fmt.Printf("Mengambil Detail Transaksi\n Query ----\n%s\n Argument ---- %v\n\n", statment, argsDetail)
 		if err != nil {
-			return []model.Transaction{}, err
+			return []model.Response{}, err
 		}
 		defer rowsDetail.Close()
 
@@ -202,10 +209,10 @@ func (t *Transaction) GetAllTransaction(mTransaction model.Transaction) ([]model
 			)
 
 			if err != nil {
-				return []model.Transaction{}, err
+				return []model.Response{}, err
 			}
 
-			dump.Response.BillDetails = append(dump.Response.BillDetails, detail)
+			dump.BillDetails = append(dump.BillDetails, detail)
 		}
 
 		nTransaction = append(nTransaction, dump)
@@ -252,7 +259,7 @@ func (t *Transaction) GetTransactionById(id int) (model.Transaction, error) {
 		SELECT d.id, d.bill_id, d.product_id, d.product_price, d.qty, 
 			p.id, p.name, p.price, p.unit
 		FROM details d
-		JOIN product p ON d.product_id = p.id
+		JOIN products p ON d.product_id = p.id
 		WHERE d.bill_id = $1;`
 
 	rowsDetail, err := t.db.Query(statment, nTransaction.Response.Id)

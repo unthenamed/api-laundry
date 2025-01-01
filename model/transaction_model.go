@@ -19,14 +19,14 @@ type bills struct {
 }
 
 type RDetails struct {
-	Id           int     `json:"id"`
-	BillId       int     `json:"billId"`
-	Product      Product `json:"products"`
-	ProductPrice int     `json:"productsPrice"`
-	Qty          int     `json:"qty"`
+	Id           int      `json:"id"`
+	BillId       int      `json:"billId"`
+	Product      Products `json:"products"`
+	ProductPrice int      `json:"productsPrice"`
+	Qty          int      `json:"qty"`
 }
 
-type response struct {
+type Response struct {
 	Id          int        `json:"id"`
 	BillDate    string     `json:"billDate"`
 	EntryDate   string     `json:"entryDate"`
@@ -44,6 +44,6 @@ type query struct {
 
 type Transaction struct {
 	Bills    bills    `json:"bills"`
-	Response response `json:"response"`
+	Response Response `json:"response"`
 	Query    query    `json:"query"`
 }

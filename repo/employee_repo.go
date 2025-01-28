@@ -24,7 +24,7 @@ func (e *employeeRepo) InsertEmployee(mEmployee model.Employees) (model.Employee
 	}
 
 	statement := `
-		INSERT INTO employee
+		INSERT INTO employees
 		(name, phone, address)
 		VALUES($1, $2, $3) RETURNING id;`
 
@@ -46,7 +46,7 @@ func (e *employeeRepo) InsertEmployee(mEmployee model.Employees) (model.Employee
 func (e *employeeRepo) GetEmployeeById(id int) (model.Employees, error) {
 	var mEmployee model.Employees
 
-	statement := `SELECT id, name, phone, address FROM employee WHERE id = $1;`
+	statement := `SELECT id, name, phone, address FROM employees WHERE id = $1;`
 	err := e.db.QueryRow(statement, id).Scan(
 		&mEmployee.Id,
 		&mEmployee.Name,
@@ -64,7 +64,7 @@ func (e *employeeRepo) GetEmployeeById(id int) (model.Employees, error) {
 func (e *employeeRepo) GetAllEmployee() ([]model.Employees, error) {
 	var employees []model.Employees
 
-	statement := `SELECT id, name, phone, address FROM employee;`
+	statement := `SELECT id, name, phone, address FROM employees;`
 	rows, err := e.db.Query(statement)
 	if err != nil {
 		return nil, err
@@ -95,7 +95,7 @@ func (e *employeeRepo) UpdateEmployeeById(id int, mEmployee model.Employees) (mo
 		return model.Employees{}, err
 	}
 
-	statement := `UPDATE employee SET name=$1, phone=$2, address=$3 WHERE id=$4 RETURNING id;`
+	statement := `UPDATE employees SET name=$1, phone=$2, address=$3 WHERE id=$4 RETURNING id;`
 	err = tx.QueryRow(statement, mEmployee.Name, mEmployee.PhoneNumber, mEmployee.Address, id).Scan(&mEmployee.Id)
 	if err != nil {
 		tx.Rollback()
@@ -111,7 +111,7 @@ func (e *employeeRepo) DeleteEmployeeById(id int) error {
 		return err
 	}
 
-	statement := `DELETE FROM employee WHERE id=$1;`
+	statement := `DELETE FROM employees WHERE id=$1;`
 	_, err = tx.Exec(statement, id)
 	if err != nil {
 		tx.Rollback()

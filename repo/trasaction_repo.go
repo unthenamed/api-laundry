@@ -8,7 +8,7 @@ import (
 
 // Interface TransactionRepo mendefinisikan metode untuk operasi transaksi
 type TransactionRepo interface {
-	InsertTransaction(model.Transaction) (model.Transaction, error)
+	InsertTransaction(model.Transaction) (model.Response, error)
 	GetAllTransaction(model.Transaction) ([]model.Response, error)
 	GetTransactionById(id int) (model.Transaction, error)
 }
@@ -19,20 +19,21 @@ type Transaction struct {
 }
 
 // Metode InsertTransaction untuk menambahkan transaksi baru ke database
-func (t *Transaction) InsertTransaction(mTransaction model.Transaction) (model.Transaction, error) {
-	// Memulai transaksi database
+func (t *Transaction) InsertTransaction(mTransaction model.Transaction) (model.Response, error) {
 	tx, err := t.db.Begin()
 	if err != nil {
-		return model.Transaction{}, err
+		return model.Response{}, err
 	}
 
 	// Query untuk memasukkan data transaksi ke tabel transaction
 	statment := `
-		INSERT INTO transaction 
-		(bill_date, entry_date, finish_date, employee_id, customer_id) 
-		VALUES($1, $2, $3, $4, $5) RETURNING id ;`
+		INSERT INTO bills
+		(bill_date, entry_date, finish_date, employee_id, customer_id)
+		VALUES($1, $2, $3, $4, $5) RETURNING id ,bill_date, entry_date, finish_date, employee_id, customer_id ;`
 
-	// Menjalankan query dan mendapatkan ID transaksi yang baru dimasukkan
+	// // Menjalankan query dan mendapatkan ID transaksi yang baru dimasukkan
+	// fmt.Println(mTransaction)
+
 	err = tx.QueryRow(
 		statment,
 		mTransaction.Bills.BillDate,
@@ -40,52 +41,91 @@ func (t *Transaction) InsertTransaction(mTransaction model.Transaction) (model.T
 		mTransaction.Bills.FinishDate,
 		mTransaction.Bills.EmployeeId,
 		mTransaction.Bills.CustomerId,
-	).Scan(&mTransaction.Bills.Id)
+	).Scan(
+		&mTransaction.Response.Id,
+		&mTransaction.Response.BillDate,
+		&mTransaction.Response.EntryDate,
+		&mTransaction.Response.FinishDate,
+		&mTransaction.Response.Employee.Id,
+		&mTransaction.Response.Customer.Id,
+	)
 
 	if err != nil {
 		tx.Rollback()
-		return model.Transaction{}, err
+		return model.Response{}, err
+	}
+
+	statement := `SELECT id, name, phone, address FROM employees WHERE id = $1;`
+	err = tx.QueryRow(statement, mTransaction.Response.Employee.Id).Scan(
+		&mTransaction.Response.Employee.Id,
+		&mTransaction.Response.Employee.Name,
+		&mTransaction.Response.Employee.PhoneNumber,
+		&mTransaction.Response.Employee.Address,
+	)
+	if err != nil {
+		return model.Response{}, err
+	}
+
+	statement = `SELECT id, name, phone, address FROM customers WHERE id = $1;`
+	err = tx.QueryRow(statement, mTransaction.Response.Customer.Id).Scan(
+		&mTransaction.Response.Customer.Id,
+		&mTransaction.Response.Customer.Name,
+		&mTransaction.Response.Customer.PhoneNumber,
+		&mTransaction.Response.Customer.Address,
+	)
+	if err != nil {
+		return model.Response{}, err
 	}
 
 	// Memasukkan detail transaksi ke tabel details
-	for i, v := range mTransaction.Bills.BillDetails {
+	for _, v := range mTransaction.Bills.BillDetails {
 		// Mendapatkan harga produk dari tabel product
-		statment = `SELECT price FROM product WHERE id = $1;`
-		err = tx.QueryRow(statment, v.ProductId).Scan(&mTransaction.Bills.BillDetails[i].ProductPrice)
+		var rDetail model.RDetails
+		statment = `SELECT id, name, price, unit FROM products WHERE id = $1;`
+		err = tx.QueryRow(statment, v.ProductId).Scan(
+			&rDetail.Product.Id,
+			&rDetail.Product.Name,
+			&rDetail.Product.Price,
+			&rDetail.Product.Unit,
+		)
 
 		if err != nil {
 			tx.Rollback()
-			return model.Transaction{}, err
+			return model.Response{}, err
 		}
 
 		// Query untuk memasukkan data detail transaksi ke tabel details
 		statment = `
-			INSERT INTO details
-			(bill_id, product_id, product_price, qty)
-			VALUES($1, $2, $3, $4) RETURNING id;`
+				INSERT INTO details
+				(bill_id, product_id, product_price, qty)
+				VALUES($1, $2, $3, $4) RETURNING id;`
 
-		// Menjalankan query dan mendapatkan ID detail transaksi yang baru dimasukkan
 		err = tx.QueryRow(
 			statment,
-			mTransaction.Bills.Id,
+			mTransaction.Response.Id,
 			v.ProductId,
-			v.ProductPrice,
+			rDetail.Product.Price,
 			v.Qty,
-		).Scan(&mTransaction.Bills.BillDetails[i].Id)
+		).Scan(&rDetail.Id)
+
+		rDetail.BillId = mTransaction.Response.Id
+		rDetail.Qty = v.Qty
+		rDetail.ProductPrice = rDetail.Product.Price * v.Qty
 
 		if err != nil {
 			tx.Rollback()
-			return model.Transaction{}, err
+			return model.Response{}, err
 		}
+
+		mTransaction.Response.BillDetails = append(mTransaction.Response.BillDetails, rDetail)
 	}
 
 	// Commit transaksi database
 	err = tx.Commit()
 	if err != nil {
-		return model.Transaction{}, err
+		return model.Response{}, err
 	}
-
-	return mTransaction, nil
+	return mTransaction.Response, nil
 }
 
 // Metode GetAllTransaction untuk mendapatkan semua data transaksi dari database

@@ -58,14 +58,15 @@ func (controller *TransactionController) GetTransactionById(c *gin.Context) {
 
 func (controller *TransactionController) InsertTransaction(c *gin.Context) {
 	var transaction model.Transaction
-	if err := c.ShouldBindJSON(&transaction); err != nil {
+	err := c.ShouldBind(&transaction.Bills)
+	if err != nil {
 		c.JSON(400, gin.H{
 			"message": err.Error(),
 		})
 		return
 	}
 
-	transaction, err := controller.Service.InsertTransaction(transaction)
+	rTransaction, err := controller.Service.InsertTransaction(transaction)
 	if err != nil {
 		c.JSON(500, gin.H{
 			"message": err.Error(),
@@ -73,7 +74,7 @@ func (controller *TransactionController) InsertTransaction(c *gin.Context) {
 		return
 	}
 
-	c.JSON(200, transaction.Response)
+	c.JSON(200, rTransaction)
 }
 
 func ObjTransactionController(router *gin.RouterGroup, service service.TransactionService) *TransactionController {

@@ -6,7 +6,7 @@ import (
 )
 
 type TransactionService interface {
-	InsertTransaction(model.Transaction) (model.Transaction, error)
+	InsertTransaction(model.Transaction) (model.Response, error)
 	GetAllTransaction(model.Transaction) ([]model.Response, error)
 	GetTransactionById(int) (model.Transaction, error)
 }
@@ -15,7 +15,7 @@ type transactionService struct {
 	repo repo.TransactionRepo
 }
 
-func (t *transactionService) InsertTransaction(mTransaction model.Transaction) (model.Transaction, error) {
+func (t *transactionService) InsertTransaction(mTransaction model.Transaction) (model.Response, error) {
 
 	return t.repo.InsertTransaction(mTransaction)
 }

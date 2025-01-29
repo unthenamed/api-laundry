@@ -49,13 +49,14 @@ func (p *EmployeeController) GetEmployeeById(c *gin.Context) {
 		return
 	}
 
-	err = p.Service.DeleteEmployeeById(id)
+	var nEmployee model.Employees
+	nEmployee, err = p.Service.GetEmployeeById(id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Deleted"})
+	c.JSON(http.StatusOK, nEmployee)
 
 }
 

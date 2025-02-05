@@ -112,7 +112,7 @@ func (controller *CustomerController) DeleteCustomerById(c *gin.Context) {
 
 	err = controller.Service.DeleteCustomerById(id)
 	if err != nil {
-		c.JSON(500, gin.H{
+		c.JSON(404, gin.H{
 			"message": err.Error(),
 		})
 		return

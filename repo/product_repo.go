@@ -56,10 +56,10 @@ func (p *productRepo) GetAllProduct(productName string) ([]model.Products, error
 	args := []interface{}{}
 	if productName != "" {
 		args = append(args, "%"+productName+"%")
-		statment += ` WHERE name LIKE $1;`
+		statment += ` WHERE name ILIKE $1;`
 	}
 
-	rows, err := p.db.Query(statment)
+	rows, err := p.db.Query(statment, args...)
 	if err != nil {
 		return []model.Products{}, err
 	}

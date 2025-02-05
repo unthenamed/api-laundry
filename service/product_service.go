@@ -55,5 +55,5 @@ func (p *productService) DeleteProductById(id int) error {
 
 // ObjProductService is a function to create a new object of ProductService
 func ObjProductService(repo repo.ProductRepo) ProductService {
-	return &productService{}
+	return &productService{Repo: repo}
 }

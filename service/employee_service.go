@@ -50,6 +50,10 @@ func (e *employeeService) UpdateEmployeeById(id int, mEmployee model.Employees) 
 }
 
 func (e *employeeService) DeleteEmployeeById(id int) error {
+	_, err := e.Repo.GetEmployeeById(id)
+	if err != nil {
+		return err
+	}
 	return e.Repo.DeleteEmployeeById(id)
 }
 

@@ -52,6 +52,10 @@ func (c *customerService) UpdateCustomerById(id int, mCustomer model.Customers) 
 }
 
 func (c *customerService) DeleteCustomerById(id int) error {
+	_, err := c.repo.GetCustomerById(id)
+	if err != nil {
+		return  err
+	}
 	return c.repo.DeleteCustomerById(id)
 }
 

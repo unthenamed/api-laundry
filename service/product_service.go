@@ -49,6 +49,10 @@ func (p *productService) UpdateProductById(id int, mProduct model.Products) (mod
 }
 
 func (p *productService) DeleteProductById(id int) error {
+	_, err := p.Repo.GetProductById(id)
+	if err != nil {
+		return err
+	}
 
 	return p.Repo.DeleteProductById(id)
 }

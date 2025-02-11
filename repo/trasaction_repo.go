@@ -50,6 +50,8 @@ func (t *Transaction) InsertTransaction(mTransaction model.Transaction) (model.R
 		&mTransaction.Response.Customer.Id,
 	)
 
+	mTransaction.Response.FormatDate()
+
 	if err != nil {
 		tx.Rollback()
 		return model.Response{}, err
@@ -205,6 +207,7 @@ func (t *Transaction) GetAllTransaction(mTransaction model.Transaction) ([]model
 			&dump.Customer.Address,
 			&dump.Customer.PhoneNumber,
 		)
+		dump.FormatDate()
 
 		if err != nil {
 			return []model.Response{}, err
@@ -289,6 +292,7 @@ func (t *Transaction) GetTransactionById(id int) (model.Transaction, error) {
 		&nTransaction.Response.Customer.Address,
 		&nTransaction.Response.Customer.PhoneNumber,
 	)
+	nTransaction.Response.FormatDate()
 
 	if err != nil {
 		return model.Transaction{}, err

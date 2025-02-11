@@ -26,9 +26,9 @@ func (c *Config) readConfig() {
 	c.Database = Database{
 		HostName:     "localhost",
 		Port:         5432,
-		User:         "postgres",
+		User:         "u0_a224",
 		Password:     "5525",
-		DatabaseName: "api-laundry",
+		DatabaseName: "postgres",
 		Driver:       "postgres",
 	}
 }

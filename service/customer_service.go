@@ -2,36 +2,24 @@ package service
 
 import (
 	"api-laundry/model"
-	"api-laundry/repo"
+	"fmt"
 )
 
-type CustomerService interface {
-	InsertCustomer(model.Customers) (model.Customers, error)
-	GetAllCustomer() ([]model.Customers, error)
-	GetCustomerById(int) (model.Customers, error)
-	UpdateCustomerById(int, model.Customers) (model.Customers, error)
-	DeleteCustomerById(int) error
+func (s *laundryService) InsertCustomer(mCustomer model.Customers) (model.Customers, error) {
+	return s.customers.InsertCustomer(mCustomer)
 }
 
-type customerService struct {
-	repo repo.CustomerRepo
+func (s *laundryService) GetAllCustomer() ([]model.Customers, error) {
+	return s.customers.GetAllCustomer()
 }
 
-func (c *customerService) InsertCustomer(mCustomer model.Customers) (model.Customers, error) {
-	return c.repo.InsertCustomer(mCustomer)
+func (s *laundryService) GetCustomerById(id int) (model.Customers, error) {
+	return s.customers.GetCustomerById(id)
 }
 
-func (c *customerService) GetAllCustomer() ([]model.Customers, error) {
-	return c.repo.GetAllCustomer()
-}
+func (s *laundryService) UpdateCustomerById(id int, mCustomer model.Customers) (model.Customers, error) {
 
-func (c *customerService) GetCustomerById(id int) (model.Customers, error) {
-	return c.repo.GetCustomerById(id)
-}
-
-func (c *customerService) UpdateCustomerById(id int, mCustomer model.Customers) (model.Customers, error) {
-
-	oldCustomer, err := c.repo.GetCustomerById(id)
+	oldCustomer, err := s.customers.GetCustomerById(id)
 	if err != nil {
 		return model.Customers{}, err
 	}
@@ -48,17 +36,21 @@ func (c *customerService) UpdateCustomerById(id int, mCustomer model.Customers) 
 		mCustomer.Address = oldCustomer.Address
 	}
 
-	return c.repo.UpdateCustomerById(id, mCustomer)
+	return s.customers.UpdateCustomerById(id, mCustomer)
 }
 
-func (c *customerService) DeleteCustomerById(id int) error {
-	_, err := c.repo.GetCustomerById(id)
+func (s *laundryService) DeleteCustomerById(id int) error {
+	_, err := s.customers.GetCustomerById(id)
 	if err != nil {
-		return  err
+		return err
 	}
-	return c.repo.DeleteCustomerById(id)
-}
 
-func ObjCustomerService(repo repo.CustomerRepo) CustomerService {
-	return &customerService{repo}
+	trx, err := s.transactions.GetAllTransaction(model.Transaction{})
+	for _, t := range trx {
+		if t.Customer.Id == id {
+			return fmt.Errorf("Id Already in transaction, pleas delete transaction first!")
+		}
+	}
+
+	return s.customers.DeleteCustomerById(id)
 }

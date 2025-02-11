@@ -2,35 +2,23 @@ package service
 
 import (
 	"api-laundry/model"
-	"api-laundry/repo"
+	"errors"
 )
 
-type ProductService interface {
-	InsertProduct(model.Products) (model.Products, error)
-	GetProductById(int) (model.Products, error)
-	GetAllProduct(string) ([]model.Products, error)
-	UpdateProductById(int, model.Products) (model.Products, error)
-	DeleteProductById(int) error
+func (s *laundryService) InsertProduct(mProduct model.Products) (model.Products, error) {
+	return s.products.InsertProduct(mProduct)
 }
 
-type productService struct {
-	Repo repo.ProductRepo
+func (s *laundryService) GetProductById(id int) (model.Products, error) {
+	return s.products.GetProductById(id)
 }
 
-func (p *productService) InsertProduct(mProduct model.Products) (model.Products, error) {
-	return p.Repo.InsertProduct(mProduct)
+func (s *laundryService) GetAllProduct(productName string) ([]model.Products, error) {
+	return s.products.GetAllProduct(productName)
 }
 
-func (p *productService) GetProductById(id int) (model.Products, error) {
-	return p.Repo.GetProductById(id)
-}
-
-func (p *productService) GetAllProduct(productName string) ([]model.Products, error) {
-	return p.Repo.GetAllProduct(productName)
-}
-
-func (p *productService) UpdateProductById(id int, mProduct model.Products) (model.Products, error) {
-	oldProduct, err := p.Repo.GetProductById(id)
+func (s *laundryService) UpdateProductById(id int, mProduct model.Products) (model.Products, error) {
+	oldProduct, err := s.products.GetProductById(id)
 	if err != nil {
 		return model.Products{}, err
 	}
@@ -45,19 +33,31 @@ func (p *productService) UpdateProductById(id int, mProduct model.Products) (mod
 		mProduct.Unit = oldProduct.Unit
 	}
 
-	return p.Repo.UpdateProductById(id, mProduct)
+	return s.products.UpdateProductById(id, mProduct)
 }
 
-func (p *productService) DeleteProductById(id int) error {
-	_, err := p.Repo.GetProductById(id)
+func (s *laundryService) DeleteProductById(id int) error {
+
+	var err error
+	_, err = s.products.GetProductById(id)
 	if err != nil {
 		return err
 	}
 
-	return p.Repo.DeleteProductById(id)
-}
+	var trx []model.Response
+	trx, err = s.transactions.GetAllTransaction(model.Transaction{})
+	if err != nil {
+		return err
+	}
 
-// ObjProductService is a function to create a new object of ProductService
-func ObjProductService(repo repo.ProductRepo) ProductService {
-	return &productService{Repo: repo}
+	for _, t := range trx {
+
+		for _, b := range t.BillDetails {
+			if b.Product.Id == id {
+				return errors.New("constrain")
+			}
+		}
+	}
+
+	return s.products.DeleteProductById(id)
 }

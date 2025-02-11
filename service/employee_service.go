@@ -2,36 +2,24 @@ package service
 
 import (
 	"api-laundry/model"
-	"api-laundry/repo"
+	"fmt"
 )
 
-type EmployeeService interface {
-	InsertEmployee(model.Employees) (model.Employees, error)
-	GetEmployeeById(int) (model.Employees, error)
-	GetAllEmployee() ([]model.Employees, error)
-	UpdateEmployeeById(int, model.Employees) (model.Employees, error)
-	DeleteEmployeeById(int) error
+func (s *laundryService) InsertEmployee(mEmployee model.Employees) (model.Employees, error) {
+	return s.employees.InsertEmployee(mEmployee)
 }
 
-type employeeService struct {
-	Repo repo.EmployeeRepo
+func (s *laundryService) GetEmployeeById(id int) (model.Employees, error) {
+	return s.employees.GetEmployeeById(id)
 }
 
-func (e *employeeService) InsertEmployee(mEmployee model.Employees) (model.Employees, error) {
-	return e.Repo.InsertEmployee(mEmployee)
-}
-
-func (e *employeeService) GetEmployeeById(id int) (model.Employees, error) {
-	return e.Repo.GetEmployeeById(id)
-}
-
-func (e *employeeService) GetAllEmployee() ([]model.Employees, error) {
-	return e.Repo.GetAllEmployee()
+func (s *laundryService) GetAllEmployee() ([]model.Employees, error) {
+	return s.employees.GetAllEmployee()
 
 }
 
-func (e *employeeService) UpdateEmployeeById(id int, mEmployee model.Employees) (model.Employees, error) {
-	oldEmployee, err := e.Repo.GetEmployeeById(id)
+func (s *laundryService) UpdateEmployeeById(id int, mEmployee model.Employees) (model.Employees, error) {
+	oldEmployee, err := s.employees.GetEmployeeById(id)
 	if err != nil {
 		return model.Employees{}, err
 	}
@@ -46,17 +34,21 @@ func (e *employeeService) UpdateEmployeeById(id int, mEmployee model.Employees) 
 		mEmployee.PhoneNumber = oldEmployee.PhoneNumber
 	}
 
-	return e.Repo.UpdateEmployeeById(id, mEmployee)
+	return s.employees.UpdateEmployeeById(id, mEmployee)
 }
 
-func (e *employeeService) DeleteEmployeeById(id int) error {
-	_, err := e.Repo.GetEmployeeById(id)
+func (s *laundryService) DeleteEmployeeById(id int) error {
+	_, err := s.employees.GetEmployeeById(id)
 	if err != nil {
 		return err
 	}
-	return e.Repo.DeleteEmployeeById(id)
-}
 
-func ObjEmployeeService(repo repo.EmployeeRepo) EmployeeService {
-	return &employeeService{Repo: repo}
+	trx, err := s.transactions.GetAllTransaction(model.Transaction{})
+	for _, t := range trx {
+		if t.Employee.Id == id {
+			return fmt.Errorf("Id Already in transaction, pleas delete transaction first!")
+		}
+	}
+
+	return s.employees.DeleteEmployeeById(id)
 }

@@ -2,32 +2,18 @@ package service
 
 import (
 	"api-laundry/model"
-	"api-laundry/repo"
 )
 
-type TransactionService interface {
-	InsertTransaction(model.Transaction) (model.Response, error)
-	GetAllTransaction(model.Transaction) ([]model.Response, error)
-	GetTransactionById(int) (model.Transaction, error)
+func (s *laundryService) InsertTransaction(mTransaction model.Transaction) (model.Response, error) {
+
+	return s.transactions.InsertTransaction(mTransaction)
 }
 
-type transactionService struct {
-	repo repo.TransactionRepo
+func (s *laundryService) GetAllTransaction(mTransaction model.Transaction) ([]model.Response, error) {
+	mTransaction.QueryDate()
+	return s.transactions.GetAllTransaction(mTransaction)
 }
 
-func (t *transactionService) InsertTransaction(mTransaction model.Transaction) (model.Response, error) {
-
-	return t.repo.InsertTransaction(mTransaction)
-}
-
-func (t *transactionService) GetAllTransaction(mTransaction model.Transaction) ([]model.Response, error) {
-	return t.repo.GetAllTransaction(mTransaction)
-}
-
-func (t *transactionService) GetTransactionById(id int) (model.Transaction, error) {
-	return t.repo.GetTransactionById(id)
-}
-
-func ObjTransactionService(repo repo.TransactionRepo) TransactionService {
-	return &transactionService{repo}
+func (s *laundryService) GetTransactionById(id int) (model.Transaction, error) {
+	return s.transactions.GetTransactionById(id)
 }

@@ -2,119 +2,93 @@ package controller
 
 import (
 	"api-laundry/model"
-	"api-laundry/service"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
 
-type EmployeeController struct {
-	RouterGroup *gin.RouterGroup
-	Service     service.EmployeeService
-}
-
-func (c *EmployeeController) Route() {
-	c.RouterGroup.POST("/employees", c.InsertEmployee)
-	c.RouterGroup.GET("/employees/:id", c.GetEmployeeById)
-	c.RouterGroup.GET("/employees", c.GetAllEmployees)
-	c.RouterGroup.PUT("/employees/:id", c.UpdateEmployeeById)
-	c.RouterGroup.DELETE("/employees/:id", c.DeleteEmployeeById)
-}
-
-func (p *EmployeeController) InsertEmployee(c *gin.Context) {
+func (h *Handlers) InsertEmployee(c *gin.Context) {
 	var employee model.Employees
 	if err := c.ShouldBindJSON(&employee); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": err.Error(),
-		})
+		ErrorRespon(c, err)
 		return
 	}
 
-	rEmployee, err := p.Service.InsertEmployee(employee)
+	rEmployee, err := h.Service.InsertEmployee(employee)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": err.Error(),
-		})
+		ErrorRespon(c, err)
 		return
 	}
 
-	c.JSON(http.StatusCreated, rEmployee)
+	SuccesRespon(c, "created", rEmployee)
 }
 
-func (p *EmployeeController) GetEmployeeById(c *gin.Context) {
+func (h *Handlers) GetEmployeeById(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, err)
+		ErrorRespon(c, err)
 		return
 	}
 
 	var nEmployee model.Employees
-	nEmployee, err = p.Service.GetEmployeeById(id)
+	nEmployee, err = h.Service.GetEmployeeById(id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, err)
+		ErrorRespon(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, nEmployee)
+	SuccesRespon(c, "OK", nEmployee)
 
 }
 
-func (p *EmployeeController) GetAllEmployees(c *gin.Context) {
-	employee, err := p.Service.GetAllEmployee()
-
+func (h *Handlers) GetAllEmployees(c *gin.Context) {
+	employee, err := h.Service.GetAllEmployee()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, err)
+		ErrorRespon(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, employee)
+	SuccesRespon(c, "OK", employee)
 }
 
-func (p *EmployeeController) UpdateEmployeeById(c *gin.Context) {
+func (h *Handlers) UpdateEmployeeById(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, err)
+		ErrorRespon(c, err)
 		return
 	}
 
 	var employee model.Employees
 	err = c.ShouldBind(&employee)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, err)
+		ErrorRespon(c, err)
 		return
 	}
 
-	employee, err = p.Service.UpdateEmployeeById(id, employee)
+	employee, err = h.Service.UpdateEmployeeById(id, employee)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, err)
+		ErrorRespon(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, employee)
+	SuccesRespon(c, "OK", employee)
 
 }
 
-func (p *EmployeeController) DeleteEmployeeById(c *gin.Context) {
+func (h *Handlers) DeleteEmployeeById(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, err)
+		ErrorRespon(c, err)
 		return
 	}
 
-	err = p.Service.DeleteEmployeeById(id)
+	err = h.Service.DeleteEmployeeById(id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, err)
+		ErrorRespon(c, err)
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "deleted"})
 
-}
-
-func ObjEmployeeController(rg *gin.RouterGroup, service service.EmployeeService) *EmployeeController {
-	return &EmployeeController{
-		RouterGroup: rg,
-		Service:     service,
-	}
 }

@@ -12,21 +12,14 @@ import (
 )
 
 type Server struct {
-	transaction service.TransactionService
-	customer    service.CustomerService
-	product     service.ProductService
-	employee    service.EmployeeService
-
-	host   string
-	engine *gin.Engine
+	service service.LaundryService
+	host    string
+	engine  *gin.Engine
 }
 
 func (s *Server) initRoute() {
 	group := s.engine.Group("/")
-	controller.ObjTransactionController(group, s.transaction).Route()
-	controller.ObjCustomerController(group, s.customer).Route()
-	controller.ObjProductController(group, s.product).Route()
-	controller.ObjEmployeeController(group, s.employee).Route()
+	controller.NewHandlersController(group, s.service).Route()
 
 }
 func (s *Server) Run() {
@@ -48,11 +41,13 @@ func NewServer() *Server {
 	}
 
 	return &Server{
-		host:        ":" + cfg.Api.Port,
-		engine:      gin.Default(),
-		transaction: service.ObjTransactionService(repo.ObjTransactionRepo(db)),
-		customer:    service.ObjCustomerService(repo.ObjCustomerRepo(db)),
-		product:     service.ObjProductService(repo.ObjProductRepo(db)),
-		employee:    service.EmployeeService(repo.ObjEmployeeRepo(db)),
+		host:   ":" + cfg.Api.Port,
+		engine: gin.Default(),
+		service: service.NewLaundryService(
+			repo.ObjTransactionRepo(db),
+			repo.ObjProductRepo(db),
+			repo.ObjCustomerRepo(db),
+			repo.ObjEmployeeRepo(db),
+		),
 	}
 }
